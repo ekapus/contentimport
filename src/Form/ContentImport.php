@@ -263,7 +263,8 @@ class ContentImport extends ConfigFormBase {
                   $nodeArray[$fieldNames[$f]] = $users;
                 }
                 break;
-
+                
+              case 'entity_reference_revisions':
               case 'text_with_summary':
               case 'text_long':
               case 'text':
