@@ -103,7 +103,7 @@ class ContentImport extends ConfigFormBase {
     if (!isset($vocabularies[$vid])) {
       ContentImport::createVoc($vid, $voc);
     }
-    $termArray = explode(',', $terms);
+    $termArray = array_map('trim', explode(',', $terms));
     $termIds = [];
     foreach ($termArray as $term) {
       $term_id = ContentImport::getTermId($term, $vid);
@@ -157,10 +157,17 @@ class ContentImport extends ConfigFormBase {
   public static function getUserInfo($userArray) {
     $uids = [];
     foreach ($userArray as $usermail) {
-      $users = \Drupal::entityTypeManager()->getStorage('user')
+      if(filter_var($usermail, FILTER_VALIDATE_EMAIL)) {
+        $users = \Drupal::entityTypeManager()->getStorage('user')
         ->loadByProperties([
           'mail' => $usermail,
         ]);
+      } else{
+        $users = \Drupal::entityTypeManager()->getStorage('user')
+        ->loadByProperties([
+          'name' => $usermail,
+        ]);
+      }
       $user = reset($users);
       if ($user) {
         $uids[] = $user->id();
