@@ -46,7 +46,7 @@ class ContentImport extends ConfigFormBase {
     ];
 
     $form['file_upload'] = [
-      '#type' => 'managed_file',
+      '#type' => 'file',
       '#title' => $this->t('Import CSV File'),
       '#size' => 40,
       '#description' => $this->t('Select the CSV file to be imported.'),
@@ -69,12 +69,8 @@ class ContentImport extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $contentType = $form_state->getValue('contentimport_contenttype');
-    $csvFile = $form_state->getValue('file_upload');
-    $file = File::load($csvFile[0]);
-    $file->setPermanent();
-    $file->save();
-    ContentImport::createNode($contentType);
-  }
+    ContentImport::createNode($_FILES, $contentType);
+   }
 
   /**
    * To get all Content Type Fields.
@@ -192,7 +188,7 @@ class ContentImport extends ConfigFormBase {
   /**
    * To import data as Content type nodes.
    */
-  public function createNode($contentType) {
+  public function createNode($filedata, $contentType) {
     global $base_url;
     $loc = db_query('SELECT file_managed.uri FROM file_managed ORDER BY file_managed.fid DESC limit 1', []);
     foreach ($loc as $val) {
@@ -211,9 +207,11 @@ class ContentImport extends ConfigFormBase {
       $image->save();
       $images[basename($file_name)] = $image;
     }
-
+    
     // Code for import csv file.
-    if ($mimetype == "text/plain" || $mimetype == 'text/x-pascal' || $mimetype == 'text/csv') {
+    $mimetype = 1;
+    if ($mimetype) {
+      $location = $filedata['files']['tmp_name']['file_upload'];
       if (($handle = fopen($location, "r")) !== FALSE) {
         $keyIndex = [];
         $index = 0;
