@@ -194,19 +194,12 @@ class ContentImport extends ConfigFormBase {
     foreach ($loc as $val) {
       $location = $val->uri;
     }
-    $mimetype = mime_content_type($location);
+   // $mimetype = mime_content_type($location);
     $fields = ContentImport::getFields($contentType);
     $fieldNames = $fields['name'];
     $fieldTypes = $fields['type'];
     $fieldSettings = $fields['setting'];
-    $files = glob('sites/default/files/' . $contentType . '/images/*.*');
-    $images = [];
-    foreach ($files as $file_name) {
-      file_unmanaged_copy($file_name, 'sites/default/files/' . $contentType . '/images/' . basename($file_name));
-      $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
-      $image->save();
-      $images[basename($file_name)] = $image;
-    }
+    
     
     // Code for import csv file.
     $mimetype = 1;
@@ -243,7 +236,22 @@ class ContentImport extends ConfigFormBase {
             switch ($fieldTypes[$f]) {
               case 'image':
                 if (!empty($images[$data[$keyIndex[$fieldNames[$f]]]])) {
-                  $nodeArray[$fieldNames[$f]] = [['target_id' => $images[$data[$keyIndex[$fieldNames[$f]]]]->id()]];
+                  $imgIndex = trim($images[$data[$keyIndex[$fieldNames[$f]]]]);
+                  $files = glob('sites/default/files/' . $contentType . '/images/' . $imgIndex);
+                  $fileExists = file_exists('sites/default/files/'.$imgIndex);
+                  if(!$fileExists) {
+                    $images = [];
+                    foreach ($files as $file_name) {
+                      $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
+                      $image->save();
+                      $images[$data[$keyIndex[$fieldNames[$f]]]] = $image;
+                    }
+                  }
+                  $nodeArray[$fieldNames[$f]] = [
+                  ['target_id' => $images[$data[$keyIndex[$fieldNames[$f]]]]->id()],
+                  'alt' => $data[$keyIndex[$fieldNames[$f]]],
+                  'title' => $data[$keyIndex[$fieldNames[$f]]]
+                  ];
                 }
                 break;
 
@@ -263,12 +271,21 @@ class ContentImport extends ConfigFormBase {
                 break;
                 
               case 'entity_reference_revisions':
-              case 'text_with_summary':
               case 'text_long':
               case 'text':
-                $nodeArray[$fieldNames[$f]] = ['value' => $data[$keyIndex[$fieldNames[$f]]], 'format' => 'full_html'];
+                $nodeArray[$fieldNames[$f]] = [ 
+                                                'value' => $data[$keyIndex[$fieldNames[$f]]], 
+                                                'format' => 'full_html'
+                                              ];
                 break;
 
+              case 'text_with_summary':
+                $nodeArray[$fieldNames[$f]] = [ 
+                                                'summary' => substr(strip_tags($data[$keyIndex[$fieldNames[$f]]]), 0, 100),
+                                                'value' => $data[$keyIndex[$fieldNames[$f]]], 
+                                                'format' => 'rich_text'
+                                              ];
+                break;
               case 'datetime':
                 $dateTime = \DateTime::createFromFormat('Y-m-d h:i:s', $data[$keyIndex[$fieldNames[$f]]]);
                 $newDateString = $dateTime->format('Y-m-d\Th:i:s');
