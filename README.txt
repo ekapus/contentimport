@@ -41,6 +41,9 @@ all the machine names from the content type
 
 The file should be CSV file.
 
+Please give write permission for your sites/default/files/ folder 
+to write the log file.
+
 If the content type having image fields, upload all the images 
 in public://<content_type>/images/ folder before importing 
 the CSV file(IMCE module will be helpful for this)
