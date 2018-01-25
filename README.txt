@@ -47,6 +47,13 @@ the CSV file(IMCE module will be helpful for this)
 
 Put the image name in the respective image column.
 
+Mandatory Columns is CSV:
+=========================
+
+title - Title of the node
+langcode - By default it should be 'en' for english and 
+		you can define the langcode created by you.
+
 Field Mapping:
 =============
 
@@ -56,12 +63,18 @@ For Image field - upload all the images
 
 For Entity Reference field(Taxonomy) - put the data as Vocabulary: term1, term2
 	If the Vocabulary or Term is not exists it will create automatically.
+	Eg: fruits:apple:orange
 
 For Entity Reference field(Users) - put the user's email address 
-	comma separated
+	comma separated 
 	If the User is not exists it will create automatically.
+	Eg: user1@d8.com,user2@d8.com
 
-For Boolean field - Put On/Yes to check the field and Off/No to uncheck the 
+For Entity Reference field(Content) - put the title of the node 
+	colon separated 
+	Eg: title1:title2:title3	
+
+For Boolean field - Put On/on/Yes/yes to check the field and Off/No to uncheck the 
 	field.
 
 For Date field - Put the data in m/d/Y h:m:i format
