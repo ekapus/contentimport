@@ -2,7 +2,7 @@ name: Content Import
 type: module
 description: 'To Import content from CSV file'
 package: Other
-configure: contentimport.settings
+configure: contentimport.admin_settings
 dependencies:
   - contentimport:node
 # Information added by Drupal.org packaging script on 2017-08-02
