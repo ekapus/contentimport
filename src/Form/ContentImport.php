@@ -214,6 +214,7 @@ class ContentImport extends ConfigFormBase {
    * To import data as Content type nodes.
    */
   public function createNode($filedata, $contentType) {
+    drupal_flush_all_caches();
     global $base_url;
 
     //$node = \Drupal\node\Entity\Node::load(17);
@@ -273,24 +274,31 @@ class ContentImport extends ConfigFormBase {
           for ($f = 0; $f < count($fieldNames); $f++) {
             switch ($fieldTypes[$f]) {
               case 'image':
-                $logVariationFields .= "Importing Image (".trim($images[$data[$keyIndex[$fieldNames[$f]]]]). ") :: ";
-                if (!empty($images[$data[$keyIndex[$fieldNames[$f]]]])) {
-                  $imgIndex = trim($images[$data[$keyIndex[$fieldNames[$f]]]]);
+                $logVariationFields .= "Importing Image (".trim($data[$keyIndex[$fieldNames[$f]]]). ") :: ";
+                if (!empty($data[$keyIndex[$fieldNames[$f]]])) {
+                  $imgIndex = trim($data[$keyIndex[$fieldNames[$f]]]);
                   $files = glob('sites/default/files/' . $contentType . '/images/' . $imgIndex);
                   $fileExists = file_exists('sites/default/files/'.$imgIndex);
                   if(!$fileExists) {
                     $images = [];
-                    foreach ($files as $file_name) {
+                    foreach ($files as $file_name) {                      
                       $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
                       $image->save();
-                      $images[$data[$keyIndex[$fieldNames[$f]]]] = $image;
+                      $images[basename($file_name)] = $image;
+                      $imageId = $images[basename($file_name)]->id();
+                      $imageName = basename($file_name);                      
                     }
+                    
+                    $nodeArray[$fieldNames[$f]] = [
+                      [
+                        'target_id' => $imageId,
+                        'alt' => $nodeArray['title'],
+                        'title' => $nodeArray['title'],
+                      ]
+                    ];
+                    $logVariationFields .= "Image uploaded successfully \n ";
                   }
-                  $nodeArray[$fieldNames[$f]] = [
-                  ['target_id' => $images[$data[$keyIndex[$fieldNames[$f]]]]->id()],
-                  'alt' => $data[$keyIndex[$fieldNames[$f]]],
-                  'title' => $data[$keyIndex[$fieldNames[$f]]]
-                  ];
+                  
                 }
                 $logVariationFields .= " Success \n";
                 break;
@@ -331,7 +339,7 @@ class ContentImport extends ConfigFormBase {
                 $nodeArray[$fieldNames[$f]] = [ 
                                                 'summary' => substr(strip_tags($data[$keyIndex[$fieldNames[$f]]]), 0, 100),
                                                 'value' => $data[$keyIndex[$fieldNames[$f]]], 
-                                                'format' => 'rich_text'
+                                                'format' => 'full_html'
                                               ];
                 $logVariationFields .= " Success \n";
                 break;
