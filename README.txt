@@ -80,7 +80,8 @@ For Entity Reference field(Content) - put the title of the node
 For Boolean field - Put On/on/Yes/yes to check the field and Off/No to uncheck the 
 	field.
 
-For Date field - Put the data in m/d/Y h:m:i format
+For Date field - Put the data in m/d/Y h:m:i format or if you want the date only
+	please put the data in m/d/y format.
 
 For Timestamp field - Put the timestamp, the system will convert and store 
 	the date.

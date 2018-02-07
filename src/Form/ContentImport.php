@@ -217,7 +217,6 @@ class ContentImport extends ConfigFormBase {
     drupal_flush_all_caches();
     global $base_url;
 
-    //$node = \Drupal\node\Entity\Node::load(17);
     $logFileName = "contentimportlog.txt";
     $logFile = fopen("sites/default/files/".$logFileName, "w") or die("There is no permission to create log file. Please give permission for sites/default/file!");
         
@@ -235,7 +234,7 @@ class ContentImport extends ConfigFormBase {
         $keyIndex = [];
         $index = 0;
         $logVariationFields = "***************************** Content Import Begins ************************************ \n \n ";
-        
+//        $node = \Drupal\node\Entity\Node::load(117);
         while (($data = fgetcsv($handle)) !== FALSE) {
           $index++;
           if ($index < 2) {
@@ -267,10 +266,10 @@ class ContentImport extends ConfigFormBase {
             $url = $base_url . "/admin/config/content/contentimport";
             header('Location:' . $url);
             exit;
-          }
-          
+          }         
 
           $logVariationFields .= "********************************* Importing node ****************************  \n \n";
+
           for ($f = 0; $f < count($fieldNames); $f++) {
             switch ($fieldTypes[$f]) {
               case 'image':
@@ -281,7 +280,7 @@ class ContentImport extends ConfigFormBase {
                   $fileExists = file_exists('sites/default/files/'.$imgIndex);
                   if(!$fileExists) {
                     $images = [];
-                    foreach ($files as $file_name) {                      
+                    foreach ($files as $file_name) {
                       $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
                       $image->save();
                       $images[basename($file_name)] = $image;
@@ -322,8 +321,7 @@ class ContentImport extends ConfigFormBase {
                 }
                 $logVariationFields .= " Success \n";
                 break;
-                
-              case 'entity_reference_revisions':
+              
               case 'text_long':
               case 'text':
                 $logVariationFields .= "Importing Content (".$fieldNames[$f].") :: ";
@@ -334,6 +332,7 @@ class ContentImport extends ConfigFormBase {
                 $logVariationFields .= " Success \n";
                 break;
 
+              case 'entity_reference_revisions':
               case 'text_with_summary':
                 $logVariationFields .= "Importing Content (".$fieldNames[$f].") :: ";
                 $nodeArray[$fieldNames[$f]] = [ 
@@ -345,9 +344,16 @@ class ContentImport extends ConfigFormBase {
                 break;
               case 'datetime':
                 $logVariationFields .= "Importing Datetime (".$fieldNames[$f].") :: ";
-                $dateTime = \DateTime::createFromFormat('Y-m-d h:i:s', $data[$keyIndex[$fieldNames[$f]]]);
-                $newDateString = $dateTime->format('Y-m-d\Th:i:s');
+                $dateArray = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
+                if(count($dateArray) > 1) {
+                  $dateTimeStamp = strtotime($data[$keyIndex[$fieldNames[$f]]]);
+                  $newDateString = date('Y-m-d\TH:i:s', $dateTimeStamp);              
+                } else {
+                  $dateTimeStamp = strtotime($data[$keyIndex[$fieldNames[$f]]]);
+                  $newDateString = date('Y-m-d', $dateTimeStamp);
+                }
                 $nodeArray[$fieldNames[$f]] = ["value" => $newDateString];
+                
                 $logVariationFields .= " Success \n";
                 break;
 
@@ -372,8 +378,22 @@ class ContentImport extends ConfigFormBase {
                 $logVariationFields .= " Success \n";
                 break;
 
+              case 'entity_reference_revisions':
+              /*  echo "Target type: ".$fieldSettings[$f]['target_type']."\n";
+
+                $paraArray = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
+
+                print_r($paraArray);
+                $node = \Drupal\node\Entity\Node::load(74);
+                echo "<pre>";
+                print_r($node);
+                echo "</pre>";
+
+                die('Node'); */
+                break;
+
               default:
-                $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];
+                $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];             
                 break;
 
             }            
@@ -390,6 +410,7 @@ class ContentImport extends ConfigFormBase {
           if ($nodeArray['title']['value'] != '') {
             $node = Node::create($nodeArray);
             $node->save();
+           
             $logVariationFields .= "********************* Node Imported successfully ********************* \n\n";
             fwrite($logFile, $logVariationFields);
           }
@@ -397,8 +418,8 @@ class ContentImport extends ConfigFormBase {
         fclose($handle);
         $url = $base_url . "/admin/content";
         header('Location:' . $url);
-        exit;
+       exit;
       }
-    }
+    } //die('test');
   }
 }
