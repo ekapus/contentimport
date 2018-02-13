@@ -242,7 +242,7 @@ class ContentImport extends ConfigFormBase {
             array_push($fieldNames, 'langcode');
             array_push($fieldTypes, 'lang');
             
-            if(!isset($data['langcode'])) {
+            if (array_search('langcode',$data) === FALSE) {
               $logVariationFields .= "Langcode missing --- Assuming EN as default langcode.. Import continues  \n \n";
               $data[count($data)] = 'langcode';
             }
@@ -412,7 +412,7 @@ class ContentImport extends ConfigFormBase {
             }            
           }
 
-          if (!isset($nodeArray['langcode'])){
+          if (array_search('langcode',$data) === FALSE) {
             $nodeArray['langcode'] = 'en';
           }
 
