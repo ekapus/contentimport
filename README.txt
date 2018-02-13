@@ -86,6 +86,13 @@ For Date field - Put the data in m/d/Y h:m:i format or if you want the date only
 For Timestamp field - Put the timestamp, the system will convert and store 
 	the date.
 
+For Geolocation field - Put the latitude and longitude values with , separated
+	If the field having mulitple values, put the data with ; as delimiter
+	Eg: lat1,long1
+		lat2,long2;lat3,long3
+		lat4,long4;lat5,long5;lat6,long6
+		lat7,long7
+
 Check the attached CSV file for Sample.
 
 Click on Import which redirects you to admin/content

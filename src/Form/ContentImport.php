@@ -225,7 +225,6 @@ class ContentImport extends ConfigFormBase {
     $fieldTypes = $fields['type'];
     $fieldSettings = $fields['setting'];
     
-    
     // Code for import csv file.
     $mimetype = 1;
     if ($mimetype) {
@@ -378,18 +377,32 @@ class ContentImport extends ConfigFormBase {
                 $logVariationFields .= " Success \n";
                 break;
 
+              case 'geolocation':
+                $logVariationFields .= "Importing Geolocation Field (".$fieldNames[$f].") :: ";
+                $geoArray = explode(";", $data[$keyIndex[$fieldNames[$f]]]);
+                if(count($geoArray) > 0) {
+                  $geoMultiArray = [];
+                  for($g = 0; $g < count($geoArray); $g++){
+                    $latlng = explode(",", $geoArray[$g]);
+                    for ($l = 0; $l < count($latlng); $l++) {
+                      $latlng[$l] = floatVal(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
+                    }
+                    array_push($geoMultiArray, ['lat' => $latlng[0], 
+                                                  'lng' => $latlng[1]]);
+                  }
+                  $nodeArray[$fieldNames[$f]] = $geoMultiArray;
+                } else { 
+                  $latlng = explode(",", $data[$keyIndex[$fieldNames[$f]]]);
+                  for ($l = 0; $l < count($latlng); $l++) {
+                    $latlng[$l] = floatVal(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
+                  }
+                  $nodeArray[$fieldNames[$f]] = ['lat' => $latlng[0], 'lng' => $latlng[1]];  
+                }
+                $logVariationFields .= " Success \n";                
+                break;
+
               case 'entity_reference_revisions':
-              /*  echo "Target type: ".$fieldSettings[$f]['target_type']."\n";
-
-                $paraArray = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
-
-                print_r($paraArray);
-                $node = \Drupal\node\Entity\Node::load(74);
-                echo "<pre>";
-                print_r($node);
-                echo "</pre>";
-
-                die('Node'); */
+                /* In Progress */
                 break;
 
               default:
@@ -414,6 +427,7 @@ class ContentImport extends ConfigFormBase {
             $logVariationFields .= "********************* Node Imported successfully ********************* \n\n";
             fwrite($logFile, $logVariationFields);
           }
+          $nodeArray = [];
         }
         fclose($handle);
         $url = $base_url . "/admin/content";
