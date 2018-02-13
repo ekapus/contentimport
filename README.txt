@@ -60,8 +60,8 @@ langcode - By default it should be 'en' for english and
 Field Mapping:
 =============
 
-For Image field - upload all the images 
-	in public://<content_type>/images/ folder before importing 
+For Image field - upload all the images
+	in public://<content_type>/images/ folder before importing
 	the CSV file(IMCE module will be helpful for this).
 
 For Entity Reference field(Taxonomy) - put the data as Vocabulary: term1, term2
@@ -77,8 +77,8 @@ For Entity Reference field(Content) - put the title of the node
 	colon separated 
 	Eg: title1:title2:title3	
 
-For Boolean field - Put On/on/Yes/yes to check the field and Off/No to uncheck the 
-	field.
+For Boolean field - Put On/on/Yes/yes to check the field and Off/No to uncheck 
+	the	field.
 
 For Date field - Put the data in m/d/Y h:m:i format or if you want the date only
 	please put the data in m/d/y format.
