@@ -181,14 +181,14 @@ class ContentImport extends ConfigFormBase {
       if (filter_var($usermail, FILTER_VALIDATE_EMAIL)) {
         $users = \Drupal::entityTypeManager()->getStorage('user')
           ->loadByProperties([
-          'mail' => $usermail,
-        ]);
-
-      } else {
+            'mail' => $usermail,
+          ]);
+      } 
+      else {
           $users = \Drupal::entityTypeManager()->getStorage('user')
             ->loadByProperties([
-            'name' => $usermail,
-          ]);
+              'name' => $usermail,
+            ]);
 
       }
       $user = reset($users);
@@ -220,7 +220,7 @@ class ContentImport extends ConfigFormBase {
     global $base_url;
 
     $logFileName = "contentimportlog.txt";
-    $logFile = fopen("sites/default/files/" . $logFileName, "w") or die("There is no permission to create log file. Please give permission for sites/default/file!");        
+    $logFile = fopen("sites/default/files/" . $logFileName, "w") or die("There is no permission to create log file. Please give permission for sites/default/file!");
     $fields = ContentImport::getFields($contentType);
     $fieldNames = $fields['name'];
     $fieldTypes = $fields['type'];
@@ -239,8 +239,8 @@ class ContentImport extends ConfigFormBase {
             array_push($fieldNames, 'title');
             array_push($fieldTypes, 'text');
             array_push($fieldNames, 'langcode');
-            array_push($fieldTypes, 'lang');            
-            if (array_search('langcode',$data) === FALSE) {
+            array_push($fieldTypes, 'lang');
+            if (array_search('langcode', $data) === FALSE) {
               $logVariationFields .= "Langcode missing --- Assuming EN as default langcode.. Import continues  \n \n";
               $data[count($data)] = 'langcode';
             }
@@ -256,35 +256,33 @@ class ContentImport extends ConfigFormBase {
               }
             }
             continue;
-          }
-          
+          }          
           if (!isset($keyIndex['title']) || !isset($keyIndex['langcode'])) {
             drupal_set_message($this->t('title or langcode is missing in CSV file. Please add these fields and import again'), 'error');
             $url = $base_url . "/admin/config/content/contentimport";
             header('Location:' . $url);
             exit;
-          }         
+          }
 
           $logVariationFields .= "********************************* Importing node ****************************  \n \n";
 
           for ($f = 0; $f < count($fieldNames); $f++) {
             switch ($fieldTypes[$f]) {
               case 'image':
-                $logVariationFields .= "Importing Image (".trim($data[$keyIndex[$fieldNames[$f]]]). ") :: ";
+                $logVariationFields .= "Importing Image (" . trim($data[$keyIndex[$fieldNames[$f]]]) . ") :: ";
                 if (!empty($data[$keyIndex[$fieldNames[$f]]])) {
                   $imgIndex = trim($data[$keyIndex[$fieldNames[$f]]]);
                   $files = glob('sites/default/files/' . $contentType . '/images/' . $imgIndex);
                   $fileExists = file_exists('sites/default/files/' . $imgIndex);
-                  if(!$fileExists) {
+                  if (!$fileExists) {
                     $images = [];
                     foreach ($files as $file_name) {
                       $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
                       $image->save();
                       $images[basename($file_name)] = $image;
                       $imageId = $images[basename($file_name)]->id();
-                      $imageName = basename($file_name);                      
+                      $imageName = basename($file_name);
                     }
-                    
                     $nodeArray[$fieldNames[$f]] = [
                       [
                         'target_id' => $imageId,
@@ -294,7 +292,6 @@ class ContentImport extends ConfigFormBase {
                     ];
                     $logVariationFields .= "Image uploaded successfully \n ";
                   }
-                  
                 }
                 $logVariationFields .= " Success \n";
                 break;
@@ -307,24 +304,25 @@ class ContentImport extends ConfigFormBase {
                     $terms = ContentImport::getTermReference($reference[0], $reference[1]);
                     $nodeArray[$fieldNames[$f]] = $terms;
                   }
-                } elseif ($fieldSettings[$f]['target_type'] == 'user') {
+                } 
+                else if ($fieldSettings[$f]['target_type'] == 'user') {
                   $userArray = explode(', ', $data[$keyIndex[$fieldNames[$f]]]);
                   $users = ContentImport::getUserInfo($userArray);
                   $nodeArray[$fieldNames[$f]] = $users;
-                } elseif ($fieldSettings[$f]['target_type'] == 'node') {
+                } 
+                else if ($fieldSettings[$f]['target_type'] == 'node') {
                   $nodeArrays = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
                   $nodeReference1 = ContentImport::getNodeId($nodeArrays);
                   $nodeArray[$fieldNames[$f]] = $nodeReference1;
                 }
                 $logVariationFields .= " Success \n";
                 break;
-              
               case 'text_long':
               case 'text':
                 $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
-                $nodeArray[$fieldNames[$f]] = [ 
-                                                'value' => $data[$keyIndex[$fieldNames[$f]]], 
-                                                'format' => 'full_html'
+                $nodeArray[$fieldNames[$f]] = [
+                                                'value' => $data[$keyIndex[$fieldNames[$f]]],
+                                                'format' => 'full_html',
                                               ];
                 $logVariationFields .= " Success \n";
                 break;
@@ -332,25 +330,26 @@ class ContentImport extends ConfigFormBase {
               case 'entity_reference_revisions':
               case 'text_with_summary':
                 $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
-                $nodeArray[$fieldNames[$f]] = [ 
+                $nodeArray[$fieldNames[$f]] = [
                                                 'summary' => substr(strip_tags($data[$keyIndex[$fieldNames[$f]]]), 0, 100),
-                                                'value' => $data[$keyIndex[$fieldNames[$f]]], 
-                                                'format' => 'full_html'
+                                                'value' => $data[$keyIndex[$fieldNames[$f]]],
+                                                'format' => 'full_html',
                                               ];
                 $logVariationFields .= " Success \n";
+
                 break;
               case 'datetime':
                 $logVariationFields .= "Importing Datetime (" . $fieldNames[$f] . ") :: ";
                 $dateArray = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
-                if(count($dateArray) > 1) {
+                if (count($dateArray) > 1) {
                   $dateTimeStamp = strtotime($data[$keyIndex[$fieldNames[$f]]]);
-                  $newDateString = date('Y-m-d\TH:i:s', $dateTimeStamp);              
-                } else {
+                  $newDateString = date('Y-m-d\TH:i:s', $dateTimeStamp);
+                }
+                else {
                   $dateTimeStamp = strtotime($data[$keyIndex[$fieldNames[$f]]]);
                   $newDateString = date('Y-m-d', $dateTimeStamp);
                 }
                 $nodeArray[$fieldNames[$f]] = ["value" => $newDateString];
-                
                 $logVariationFields .= " Success \n";
                 break;
 
@@ -362,7 +361,7 @@ class ContentImport extends ConfigFormBase {
 
               case 'boolean':
                 $logVariationFields .= "Importing Boolean (" . $fieldNames[$f] . ") :: ";
-                $nodeArray[$fieldNames[$f]] = ($data[$keyIndex[$fieldNames[$f]]] == 'On' || 
+                $nodeArray[$fieldNames[$f]] = ($data[$keyIndex[$fieldNames[$f]]] == 'On' ||
                                                $data[$keyIndex[$fieldNames[$f]]] == 'Yes' ||
                                                $data[$keyIndex[$fieldNames[$f]]] == 'on' ||
                                                $data[$keyIndex[$fieldNames[$f]]] == 'yes') ? 1 : 0;
@@ -378,25 +377,27 @@ class ContentImport extends ConfigFormBase {
               case 'geolocation':
                 $logVariationFields .= "Importing Geolocation Field (" . $fieldNames[$f] . ") :: ";
                 $geoArray = explode(";", $data[$keyIndex[$fieldNames[$f]]]);
-                if(count($geoArray) > 0) {
+                if (count($geoArray) > 0) {
                   $geoMultiArray = [];
-                  for($g = 0; $g < count($geoArray); $g++){
+                  for ($g = 0; $g < count($geoArray); $g++) {
                     $latlng = explode(",", $geoArray[$g]);
                     for ($l = 0; $l < count($latlng); $l++) {
                       $latlng[$l] = floatVal(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
                     }
                     array_push($geoMultiArray, ['lat' => $latlng[0], 
-                                                  'lng' => $latlng[1]]);
+                                                  'lng' => $latlng[1]
+                                                ]);
                   }
                   $nodeArray[$fieldNames[$f]] = $geoMultiArray;
-                } else { 
+                } 
+                else {
                   $latlng = explode(",", $data[$keyIndex[$fieldNames[$f]]]);
                   for ($l = 0; $l < count($latlng); $l++) {
-                    $latlng[$l] = floatVal(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
+                    $latlng[$l] = floatval(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
                   }
-                  $nodeArray[$fieldNames[$f]] = ['lat' => $latlng[0], 'lng' => $latlng[1]];  
+                  $nodeArray[$fieldNames[$f]] = ['lat' => $latlng[0], 'lng' => $latlng[1]];
                 }
-                $logVariationFields .= " Success \n";                
+                $logVariationFields .= " Success \n";
                 break;
 
               case 'entity_reference_revisions':
@@ -404,13 +405,12 @@ class ContentImport extends ConfigFormBase {
                 break;
 
               default:
-                $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];             
+                $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];
                 break;
-
-            }            
+            }
           }
 
-          if (array_search('langcode',$data) === FALSE) {
+          if (array_search('langcode', $data) === FALSE) {
             $nodeArray['langcode'] = 'en';
           }
 
@@ -421,7 +421,6 @@ class ContentImport extends ConfigFormBase {
           if ($nodeArray['title']['value'] != '') {
             $node = Node::create($nodeArray);
             $node->save();
-           
             $logVariationFields .= "********************* Node Imported successfully ********************* \n\n";
             fwrite($logFile, $logVariationFields);
           }
@@ -430,8 +429,9 @@ class ContentImport extends ConfigFormBase {
         fclose($handle);
         $url = $base_url . "/admin/content";
         header('Location:' . $url);
-       exit;
+        exit;
       }
     } //die('test');
   }
+
 }

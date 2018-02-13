@@ -4,5 +4,4 @@ contentimport.admin_settings:
     _form: 'Drupal\contentimport\Form\ContentImport'
     _title: 'Content Import'
   requirements:
-    _permission: 'administer site configuration'
-    
+    _permission: 'administer site configuration'    
