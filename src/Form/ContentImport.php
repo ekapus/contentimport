@@ -221,13 +221,13 @@ class ContentImport extends ConfigFormBase {
       if (filter_var($usermail, FILTER_VALIDATE_EMAIL)) {
         $users = \Drupal::entityTypeManager()->getStorage('user')
           ->loadByProperties([
-          'mail' => $usermail,
+            'mail' => $usermail,
           ]);
       }
       else {
         $users = \Drupal::entityTypeManager()->getStorage('user')
           ->loadByProperties([
-          'name' => $usermail,
+            'name' => $usermail,
           ]);
       }
       $user = reset($users);
@@ -348,7 +348,7 @@ class ContentImport extends ConfigFormBase {
                   $userArray = explode(', ', $data[$keyIndex[$fieldNames[$f]]]);
                   $users = ContentImport::getUserInfo($userArray);
                   $nodeArray[$fieldNames[$f]] = $users;
-                } 
+                }
                 elseif ($fieldSettings[$f]['target_type'] == 'node') {
                   $nodeArrays = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
                   $nodeReference1 = ContentImport::getNodeId($nodeArrays);
@@ -356,7 +356,7 @@ class ContentImport extends ConfigFormBase {
                 }
                 $logVariationFields .= " Success \n";
                 break;
-              
+                            
               case 'text_long':
               case 'text':
                 $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
@@ -426,10 +426,10 @@ class ContentImport extends ConfigFormBase {
                       $latlng[$l] = floatval(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
                     }
                     array_push($geoMultiArray, [
-                                                  'lat' => $latlng[0],
-                                                  'lng' => $latlng[1],
-                                                ]);
-                  }
+                      'lat' => $latlng[0],
+                      'lng' => $latlng[1],
+                    ]);
+    }
                   $nodeArray[$fieldNames[$f]] = $geoMultiArray;
                 }
                 else {
