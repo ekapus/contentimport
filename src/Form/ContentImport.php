@@ -11,6 +11,9 @@ use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\user\Entity\User;
 use Drupal\Core\Url;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\HtmlCommand;
+
 
 /**
  * Configure Content Import settings for this site.
@@ -43,7 +46,17 @@ class ContentImport extends ConfigFormBase {
       '#type' => 'select',
       '#title' => $this->t('Select Content Type'),
       '#options' => $contentTypes,
-      '#default_value' => $selected,
+      '#default_value' => t('Select'),
+      '#required' => TRUE,
+      '#ajax' => array(
+        'event' => 'change',
+        'callback' => '::content_import_fields_callback',
+        'wrapper' => 'content_import_fields_change_wrapper',
+        'progress' => array(
+          'type' => 'throbber',
+          'message' => NULL,
+        ),
+      ),
     ];
 
     $form['file_upload'] = [
@@ -62,6 +75,10 @@ class ContentImport extends ConfigFormBase {
       '#url' => Url::fromUri('base:sites/default/files/contentimportlog.txt'),
     ];
 
+    $form['import_ct_markup'] = array(
+      '#suffix' => '<div id="content_import_fields_change_wrapper"></div>',
+    );
+
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Import'),
@@ -69,6 +86,29 @@ class ContentImport extends ConfigFormBase {
     ];
 
     return parent::buildForm($form, $form_state);
+  }
+  /**
+   * Content Import Sample CSV Creation.
+   */
+  public function content_import_fields_callback(array &$form, FormStateInterface $form_state) {
+    global $base_url;
+    $ajax_response = new AjaxResponse();
+    $contentType = $form_state->getValue('contentimport_contenttype');
+    $fields = ContentImport::getFields($contentType);
+    $fieldArray = $fields['name'];    
+    $contentTypeFields = 'title,';
+    $contentTypeFields .= 'langcode,';
+    foreach($fieldArray as $key => $val) {
+      $contentTypeFields .= $val.',';      
+    }
+    $contentTypeFields = substr($contentTypeFields, 0, -1);
+    $result .= '</tr></table>';
+    $sampleFile = $contentType.'.csv';
+    $handle = fopen("sites/default/files/" . $sampleFile, "w+") or die("There is no permission to create log file. Please give permission for sites/default/file!");
+    fwrite($handle, $contentTypeFields); 
+    $result = '<a class="button button--primary" href="'.$base_url.'/sites/default/files/' . $sampleFile.'">Click here to download Sample CSV</a>';
+    $ajax_response->addCommand(new HtmlCommand('#content_import_fields_change_wrapper', $result));
+    return $ajax_response;
   }
 
   /**
@@ -181,14 +221,14 @@ class ContentImport extends ConfigFormBase {
       if (filter_var($usermail, FILTER_VALIDATE_EMAIL)) {
         $users = \Drupal::entityTypeManager()->getStorage('user')
           ->loadByProperties([
-            'mail' => $usermail,
-          ]);
-      } 
-      else {
+          'mail' => $usermail,
+        ]);
+
+      } else {
           $users = \Drupal::entityTypeManager()->getStorage('user')
             ->loadByProperties([
-              'name' => $usermail,
-            ]);
+            'name' => $usermail,
+          ]);
 
       }
       $user = reset($users);
@@ -220,7 +260,7 @@ class ContentImport extends ConfigFormBase {
     global $base_url;
 
     $logFileName = "contentimportlog.txt";
-    $logFile = fopen("sites/default/files/" . $logFileName, "w") or die("There is no permission to create log file. Please give permission for sites/default/file!");
+    $logFile = fopen("sites/default/files/" . $logFileName, "w") or die("There is no permission to create log file. Please give permission for sites/default/file!");        
     $fields = ContentImport::getFields($contentType);
     $fieldNames = $fields['name'];
     $fieldTypes = $fields['type'];
@@ -239,8 +279,8 @@ class ContentImport extends ConfigFormBase {
             array_push($fieldNames, 'title');
             array_push($fieldTypes, 'text');
             array_push($fieldNames, 'langcode');
-            array_push($fieldTypes, 'lang');
-            if (array_search('langcode', $data) === FALSE) {
+            array_push($fieldTypes, 'lang');            
+            if (array_search('langcode',$data) === FALSE) {
               $logVariationFields .= "Langcode missing --- Assuming EN as default langcode.. Import continues  \n \n";
               $data[count($data)] = 'langcode';
             }
@@ -256,33 +296,35 @@ class ContentImport extends ConfigFormBase {
               }
             }
             continue;
-          }          
+          }
+          
           if (!isset($keyIndex['title']) || !isset($keyIndex['langcode'])) {
             drupal_set_message($this->t('title or langcode is missing in CSV file. Please add these fields and import again'), 'error');
             $url = $base_url . "/admin/config/content/contentimport";
             header('Location:' . $url);
             exit;
-          }
+          }         
 
           $logVariationFields .= "********************************* Importing node ****************************  \n \n";
 
           for ($f = 0; $f < count($fieldNames); $f++) {
             switch ($fieldTypes[$f]) {
               case 'image':
-                $logVariationFields .= "Importing Image (" . trim($data[$keyIndex[$fieldNames[$f]]]) . ") :: ";
+                $logVariationFields .= "Importing Image (".trim($data[$keyIndex[$fieldNames[$f]]]). ") :: ";
                 if (!empty($data[$keyIndex[$fieldNames[$f]]])) {
                   $imgIndex = trim($data[$keyIndex[$fieldNames[$f]]]);
                   $files = glob('sites/default/files/' . $contentType . '/images/' . $imgIndex);
                   $fileExists = file_exists('sites/default/files/' . $imgIndex);
-                  if (!$fileExists) {
+                  if(!$fileExists) {
                     $images = [];
                     foreach ($files as $file_name) {
                       $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
                       $image->save();
                       $images[basename($file_name)] = $image;
                       $imageId = $images[basename($file_name)]->id();
-                      $imageName = basename($file_name);
+                      $imageName = basename($file_name);                      
                     }
+                    
                     $nodeArray[$fieldNames[$f]] = [
                       [
                         'target_id' => $imageId,
@@ -292,6 +334,7 @@ class ContentImport extends ConfigFormBase {
                     ];
                     $logVariationFields .= "Image uploaded successfully \n ";
                   }
+                  
                 }
                 $logVariationFields .= " Success \n";
                 break;
@@ -304,25 +347,24 @@ class ContentImport extends ConfigFormBase {
                     $terms = ContentImport::getTermReference($reference[0], $reference[1]);
                     $nodeArray[$fieldNames[$f]] = $terms;
                   }
-                } 
-                else if ($fieldSettings[$f]['target_type'] == 'user') {
+                } elseif ($fieldSettings[$f]['target_type'] == 'user') {
                   $userArray = explode(', ', $data[$keyIndex[$fieldNames[$f]]]);
                   $users = ContentImport::getUserInfo($userArray);
                   $nodeArray[$fieldNames[$f]] = $users;
-                } 
-                else if ($fieldSettings[$f]['target_type'] == 'node') {
+                } elseif ($fieldSettings[$f]['target_type'] == 'node') {
                   $nodeArrays = explode(':', $data[$keyIndex[$fieldNames[$f]]]);
                   $nodeReference1 = ContentImport::getNodeId($nodeArrays);
                   $nodeArray[$fieldNames[$f]] = $nodeReference1;
                 }
                 $logVariationFields .= " Success \n";
                 break;
+              
               case 'text_long':
               case 'text':
                 $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
-                $nodeArray[$fieldNames[$f]] = [
-                                                'value' => $data[$keyIndex[$fieldNames[$f]]],
-                                                'format' => 'full_html',
+                $nodeArray[$fieldNames[$f]] = [ 
+                                                'value' => $data[$keyIndex[$fieldNames[$f]]], 
+                                                'format' => 'full_html'
                                               ];
                 $logVariationFields .= " Success \n";
                 break;
@@ -330,7 +372,7 @@ class ContentImport extends ConfigFormBase {
               case 'entity_reference_revisions':
               case 'text_with_summary':
                 $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
-                $nodeArray[$fieldNames[$f]] = [
+                $nodeArray[$fieldNames[$f]] = [ 
                                                 'summary' => substr(strip_tags($data[$keyIndex[$fieldNames[$f]]]), 0, 100),
                                                 'value' => $data[$keyIndex[$fieldNames[$f]]],
                                                 'format' => 'full_html',

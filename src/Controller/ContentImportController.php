@@ -15,6 +15,7 @@ class ContentImportController extends ControllerBase {
   public static function getAllContentTypes() {
     $contentTypes = \Drupal::service('entity.manager')->getStorage('node_type')->loadMultiple();
     $contentTypesList = [];
+    $contentTypesList['none'] = 'Select';
     foreach ($contentTypes as $contentType) {
       $contentTypesList[$contentType->id()] = $contentType->label();
     }
