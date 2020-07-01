@@ -173,11 +173,13 @@ class ContentImport extends ConfigFormBase {
    * To Create Terms if it is not available.
    */
   public function createVoc($vid, $voc) {
-    $vocabulary = Vocabulary::create([
-      'vid' => $vid,
-      'machine_name' => $vid,
-      'name' => $voc,
-    ]);
+    $vocabulary = Vocabulary::create(
+          [
+            'vid' => $vid,
+            'machine_name' => $vid,
+            'name' => $voc,
+          ]
+      );
     $vocabulary->save();
   }
 
@@ -185,11 +187,13 @@ class ContentImport extends ConfigFormBase {
    * To Create Terms if it is not available.
    */
   public function createTerm($voc, $term, $vid) {
-    Term::create([
-      'parent' => [$voc],
-      'name' => $term,
-      'vid' => $vid,
-    ])->save();
+    Term::create(
+          [
+            'parent' => [$voc],
+            'name' => $term,
+            'vid' => $vid,
+          ]
+      )->save();
     $termId = ContentImport::getTermId($term, $vid);
     return $termId;
   }
@@ -231,15 +235,19 @@ class ContentImport extends ConfigFormBase {
     foreach ($userArray as $usermail) {
       if (filter_var($usermail, FILTER_VALIDATE_EMAIL)) {
         $users = \Drupal::entityTypeManager()->getStorage('user')
-          ->loadByProperties([
-            'mail' => $usermail,
-          ]);
+          ->loadByProperties(
+                  [
+                    'mail' => $usermail,
+                  ]
+              );
       }
       else {
         $users = \Drupal::entityTypeManager()->getStorage('user')
-          ->loadByProperties([
-            'name' => $usermail,
-          ]);
+          ->loadByProperties(
+                  [
+                    'name' => $usermail,
+                  ]
+              );
       }
       $user = reset($users);
       if ($user) {
@@ -367,7 +375,7 @@ class ContentImport extends ConfigFormBase {
                 }
                 $logVariationFields .= " Success \n";
                 break;
-                            
+
               case 'text_long':
               case 'text':
                 $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
@@ -414,9 +422,9 @@ class ContentImport extends ConfigFormBase {
               case 'boolean':
                 $logVariationFields .= "Importing Boolean (" . $fieldNames[$f] . ") :: ";
                 $nodeArray[$fieldNames[$f]] = ($data[$keyIndex[$fieldNames[$f]]] == 'On' ||
-                                               $data[$keyIndex[$fieldNames[$f]]] == 'Yes' ||
-                                               $data[$keyIndex[$fieldNames[$f]]] == 'on' ||
-                                               $data[$keyIndex[$fieldNames[$f]]] == 'yes') ? 1 : 0;
+                                   $data[$keyIndex[$fieldNames[$f]]] == 'Yes' ||
+                                   $data[$keyIndex[$fieldNames[$f]]] == 'on' ||
+                                   $data[$keyIndex[$fieldNames[$f]]] == 'yes') ? 1 : 0;
                 $logVariationFields .= " Success \n";
                 break;
 
@@ -436,10 +444,12 @@ class ContentImport extends ConfigFormBase {
                     for ($l = 0; $l < count($latlng); $l++) {
                       $latlng[$l] = floatval(preg_replace("/\[^0-9,.]/", "", $latlng[$l]));
                     }
-                    array_push($geoMultiArray, [
-                      'lat' => $latlng[0],
-                      'lng' => $latlng[1],
-                    ]);
+                    array_push(
+                          $geoMultiArray, [
+                            'lat' => $latlng[0],
+                            'lng' => $latlng[1],
+                          ]
+                      );
                   }
                   $nodeArray[$fieldNames[$f]] = $geoMultiArray;
                 }
