@@ -40,12 +40,11 @@ class ContentImport extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $contentTypes = ContentImportController::getAllContentTypes();
-    $selected = 0;
     $form['contentimport_contenttype'] = [
       '#type' => 'select',
       '#title' => $this->t('Select Content Type'),
       '#options' => $contentTypes,
-      '#default_value' => t('Select'),
+      '#default_value' => $this->t('Select'),
       '#required' => TRUE,
       '#ajax' => [
         'event' => 'change',
@@ -109,11 +108,10 @@ class ContentImport extends ConfigFormBase {
     $fieldArray = $fields['name'];
     $contentTypeFields = 'title,';
     $contentTypeFields .= 'langcode,';
-    foreach ($fieldArray as $key => $val) {
+    foreach ($fieldArray as $val) {
       $contentTypeFields .= $val . ',';
     }
     $contentTypeFields = substr($contentTypeFields, 0, -1);
-    $result .= '</tr></table>';
     $sampleFile = $contentType . '.csv';
     $handle = fopen("sites/default/files/" . $sampleFile, "w+") or die("There is no permission to create log file. Please give permission for sites/default/file!");
     fwrite($handle, $contentTypeFields);
@@ -321,9 +319,9 @@ class ContentImport extends ConfigFormBase {
             header('Location:' . $url);
             exit;
           }
-
           $logVariationFields .= "********************************* Importing node ****************************  \n \n";
-
+          // Default Language.
+          $nodeArray['langcode'] = 'en';
           for ($f = 0; $f < count($fieldNames); $f++) {
             switch ($fieldTypes[$f]) {
               case 'image':
@@ -339,13 +337,12 @@ class ContentImport extends ConfigFormBase {
                       $image->save();
                       $images[basename($file_name)] = $image;
                       $imageId = $images[basename($file_name)]->id();
-                      $imageName = basename($file_name);
                     }
                     $nodeArray[$fieldNames[$f]] = [
                       [
                         'target_id' => $imageId,
-                        'alt' => $nodeArray['title'],
-                        'title' => $nodeArray['title'],
+                        'alt' => $images['title'],
+                        'title' => $images['title'],
                       ],
                     ];
                     $logVariationFields .= "Image uploaded successfully \n ";
@@ -472,11 +469,6 @@ class ContentImport extends ConfigFormBase {
                 break;
             }
           }
-
-          if (array_search('langcode', $data) === FALSE) {
-            $nodeArray['langcode'] = 'en';
-          }
-
           $nodeArray['type'] = strtolower($contentType);
           $nodeArray['uid'] = 1;
           $nodeArray['promote'] = 0;
