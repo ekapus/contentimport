@@ -88,6 +88,17 @@ class ContentImport extends ConfigFormBase {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $this->file = file_save_upload('file_upload', $form['file_upload']['#upload_validators'], FALSE, 0);
+
+    if (!$this->file) {
+      $form_state->setErrorByName('file_upload', $this->t('Provided file is not a CSV file or is corrupted.'));
+    }
+  }
+
+  /**
    * Content Import Sample CSV Creation.
    */
   public function contentImportcallback(array &$form, FormStateInterface $form_state) {
@@ -116,7 +127,7 @@ class ContentImport extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $contentType = $form_state->getValue('contentimport_contenttype');
-    ContentImport::createNode($_FILES, $contentType);
+    ContentImport::createNode($this->file, $contentType);
   }
 
   /**
@@ -267,7 +278,7 @@ class ContentImport extends ConfigFormBase {
     // Code for import csv file.
     $mimetype = 1;
     if ($mimetype) {
-      $location = $filedata['files']['tmp_name']['file_upload'];
+      $location = $filedata->destination;
       if (($handle = fopen($location, "r")) !== FALSE) {
         $keyIndex = [];
         $index = 0;
@@ -429,7 +440,7 @@ class ContentImport extends ConfigFormBase {
                       'lat' => $latlng[0],
                       'lng' => $latlng[1],
                     ]);
-    }
+                  }
                   $nodeArray[$fieldNames[$f]] = $geoMultiArray;
                 }
                 else {
