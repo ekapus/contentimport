@@ -6,4 +6,3 @@ package: Other
 configure: contentimport.admin_settings
 dependencies:
   - drupal:node
-# Information added by Drupal.org packaging script on 2017-08-02
