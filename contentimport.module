@@ -212,7 +212,8 @@ function create_node($filedata, $contentType) {
           continue;
         }
         if (!isset($keyIndex['title']) || !isset($keyIndex['langcode'])) {
-          drupal_set_message(t('title or langcode is missing in CSV file. Please add these fields and import again'));
+          \Drupal::messenger()
+            ->addError(t('title or langcode is missing in CSV file. Please add these fields and import again'));
           $url = $base_url . "/admin/config/content/contentimport";
           header('Location:' . $url);
           exit;
@@ -252,9 +253,19 @@ function create_node($filedata, $contentType) {
             case 'entity_reference':
               $logVariationFields .= "Importing Reference Type (" . $fieldSettings[$f]['target_type'] . ") :: ";
               if ($fieldSettings[$f]['target_type'] == 'taxonomy_term') {
-                $reference = explode(":", $data[$keyIndex[$fieldNames[$f]]]);
-                if (is_array($reference) && $reference[0] != '') {
-                  $terms = get_term_reference($reference[0], $reference[1]);
+                $target_bundles = $fieldSettings[$f]['handler_settings']['target_bundles'];
+                // If vocabulary field settings target is single, assume it.
+                if (count($target_bundles) == 1 && !empty($data[$keyIndex[$fieldNames[$f]]])) {
+                  $terms = get_term_reference($target_bundles[key($target_bundles)], $data[$keyIndex[$fieldNames[$f]]]);
+                }
+                // If not, assume vocabulary is added with ":" delimiter.
+                else {
+                  $reference = explode(":", $data[$keyIndex[$fieldNames[$f]]]);
+                  if (is_array($reference) && $reference[0] != '') {
+                    $terms = get_term_reference($reference[0], $reference[1]);
+                  }
+                }
+                if (!empty($terms)) {
                   $nodeArray[$fieldNames[$f]] = $terms;
                 }
               }
