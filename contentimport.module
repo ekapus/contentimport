@@ -373,6 +373,14 @@ function create_node($filedata, $contentType) {
               /* In Progress */
               break;
 
+            case 'list_string':
+              $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
+              $listArray = explode(",", $data[$keyIndex[$fieldNames[$f]]]);
+              array_walk($listArray, 'trim');
+              $nodeArray[$fieldNames[$f]] = $listArray;
+              $logVariationFields .= " Success \n";
+              break;
+
             default:
               $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];
               break;
