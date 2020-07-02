@@ -27,7 +27,7 @@ function contentimport_preprocess_page(&$variables) {
  */
 function get_fields($contentType) {
   $fields = [];
-  foreach (\Drupal::entityManager()
+  foreach (\Drupal::service('entity_field.manager')
     ->getFieldDefinitions('node', $contentType) as $field_definition) {
     if (!empty($field_definition->getTargetBundle())) {
       $fields['name'][] = $field_definition->getName();
