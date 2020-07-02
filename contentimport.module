@@ -381,6 +381,34 @@ function create_node($filedata, $contentType) {
               $logVariationFields .= " Success \n";
               break;
 
+            case 'geofield':
+              $logVariationFields .= "Importing Geofield Field (" . $fieldNames[$f] . ") :: ";
+              if (!empty(trim($data[$keyIndex[$fieldNames[$f]]]))) {
+                $geoFieldArray = explode(";", trim($data[$keyIndex[$fieldNames[$f]]]));
+                if (count($geoFieldArray) > 0) {
+                  $geoFieldMultiArray = [];
+                  for ($g = 0; $g < count($geoFieldArray); $g++) {
+                    $latlng = explode(",", $geoFieldArray[$g]);
+                    for ($l = 0; $l < count($latlng); $l++) {
+                      $latlng[$l] = floatval($latlng[$l]);
+                    }
+                    array_push($geoFieldMultiArray,
+                    \Drupal::service('geofield.wkt_generator')->WktBuildPoint([trim($latlng[1]), trim($latlng[0])]));
+                  }
+                  $nodeArray[$fieldNames[$f]] = $geoFieldMultiArray;
+                }
+                else {
+                  $latlng = explode(",", trim($data[$keyIndex[$fieldNames[$f]]]));
+                  for ($l = 0; $l < count($latlng); $l++) {
+                    $latlng[$l] = floatval($latlng[$l]);
+                  }
+                  $lonlat = \Drupal::service('geofield.wkt_generator')->WktBuildPoint([trim($latlng[1]), trim($latlng[0])]);
+                  $nodeArray[$fieldNames[$f]] = $lonlat;
+                }
+                $logVariationFields .= " Success \n";
+              }
+              break;
+
             default:
               $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];
               break;
