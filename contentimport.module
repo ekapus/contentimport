@@ -208,7 +208,7 @@ function create_node($filedata, $contentType) {
           array_push($fieldNames, 'langcode');
           array_push($fieldTypes, 'lang');
           array_push($fieldNames, 'author');
-          array_push($fieldTypes, 'uid');
+          array_push($fieldTypes, 'authored_by');
           if (array_search('langcode', $data) === FALSE) {
             $logVariationFields .= "Langcode missing --- Assuming EN as default langcode.. Import continues  \n \n";
             $data[count($data)] = 'langcode';
@@ -424,9 +424,10 @@ function create_node($filedata, $contentType) {
               }
               break;
 
-            case 'uid':
+            case 'authored_by':
               $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
-              $nodeArray['uid'] = get_user_id($data[$keyIndex[$fieldNames[$f]]]);
+              $user_id = get_user_id($data[$keyIndex[$fieldNames[$f]]]);
+              $nodeArray['uid'] = ($user_id > 0) ? $user_id : \Drupal::currentUser()->id();
               $logVariationFields .= " Success \n";
               break;
 
