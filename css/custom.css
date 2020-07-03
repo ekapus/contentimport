@@ -4,3 +4,7 @@
 #content_import_fields_change_wrapper {
   float: left;
 }
+.contentimport .description {
+  color: #31825d !important;
+}
+

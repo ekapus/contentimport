@@ -10,6 +10,8 @@ use Drupal\file\Entity\File;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\user\Entity\User;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_preprocess_page().
@@ -25,10 +27,10 @@ function contentimport_preprocess_page(&$variables) {
 /**
  * To get all Content Type Fields.
  */
-function get_fields($contentType) {
+function get_fields($content_type) {
   $fields = [];
   foreach (\Drupal::service('entity_field.manager')
-    ->getFieldDefinitions('node', $contentType) as $field_definition) {
+    ->getFieldDefinitions('node', $content_type) as $field_definition) {
     if (!empty($field_definition->getTargetBundle())) {
       $fields['name'][] = $field_definition->getName();
       $fields['type'][] = $field_definition->getType();
@@ -180,15 +182,47 @@ function get_user_info($userArray) {
 }
 
 /**
+ * To check node exists or not.
+ */
+function node_exists($nid) {
+  $node_count = \Drupal::database()
+    ->select('node_field_data', 'n')
+    ->fields('n', ['nid'])
+    ->condition('n.nid', $nid)
+    ->execute()->fetchField();
+  return $node_count;
+}
+
+/**
+ * To throw error messages.
+ */
+function error_message($message) {
+  \Drupal::messenger()
+    ->addError($message);
+  $url = Url::fromUri('internal:/admin/config/content/contentimport');
+  $destination = $url->toString();
+  $response = new RedirectResponse($destination, 301);
+  return $response->send();
+}
+
+/**
+ * To callback after import completion.
+ */
+function import_success() {
+  $url = Url::fromUri('internal:/admin/content');
+  $destination = $url->toString();
+  $response = new RedirectResponse($destination, 301);
+  $response->send();
+}
+
+/**
  * To import data as Content type nodes.
  */
-function create_node($filedata, $contentType) {
+function import_node($filedata, $content_type, $import_type) {
   drupal_flush_all_caches();
-  global $base_url;
-
   $logFileName = "contentimportlog.txt";
   $logFile = fopen("sites/default/files/" . $logFileName, "w") or die("There is no permission to create log file. Please give permission for sites/default/file!");
-  $fields = get_fields($contentType);
+  $fields = get_fields($content_type);
   $fieldNames = $fields['name'];
   $fieldTypes = $fields['type'];
   $fieldSettings = $fields['setting'];
@@ -209,6 +243,10 @@ function create_node($filedata, $contentType) {
           array_push($fieldTypes, 'lang');
           array_push($fieldNames, 'author');
           array_push($fieldTypes, 'authored_by');
+          if ($import_type == '2') {
+            array_push($fieldNames, 'nodeid');
+            array_push($fieldTypes, 'id');
+          }
           if (array_search('langcode', $data) === FALSE) {
             $logVariationFields .= "Langcode missing --- Assuming EN as default langcode.. Import continues  \n \n";
             $data[count($data)] = 'langcode';
@@ -226,12 +264,15 @@ function create_node($filedata, $contentType) {
           }
           continue;
         }
-        if (!isset($keyIndex['title']) || !isset($keyIndex['langcode'])) {
-          \Drupal::messenger()
-            ->addError(t('title or langcode is missing in CSV file. Please add these fields and import again'));
-          $url = $base_url . "/admin/config/content/contentimport";
-          header('Location:' . $url);
-          exit;
+        if ($import_type == '2') {
+          if (!isset($keyIndex['title']) || !isset($keyIndex['langcode']) || !isset($keyIndex['nodeid'])) {
+            error_message(t('nodeid or title or langcode is missing in CSV file. These fields are mandatory to update existing nodes.'));
+          }
+        }
+        else {
+          if (!isset($keyIndex['title']) || !isset($keyIndex['langcode'])) {
+            error_message(t('title or langcode is missing in CSV file. These fields are mandatory to create new nodes.'));
+          }
         }
         $logVariationFields .= "********************************* Importing node ****************************  \n \n";
         // Default Language.
@@ -242,12 +283,12 @@ function create_node($filedata, $contentType) {
               $logVariationFields .= "Importing Image (" . trim($data[$keyIndex[$fieldNames[$f]]]) . ") :: ";
               if (!empty($data[$keyIndex[$fieldNames[$f]]])) {
                 $imgIndex = trim($data[$keyIndex[$fieldNames[$f]]]);
-                $files = glob('sites/default/files/' . $contentType . '/images/' . $imgIndex);
+                $files = glob('sites/default/files/' . $content_type . '/images/' . $imgIndex);
                 $fileExists = file_exists('sites/default/files/' . $imgIndex);
                 if (!$fileExists) {
                   $images = [];
                   foreach ($files as $file_name) {
-                    $image = File::create(['uri' => 'public://' . $contentType . '/images/' . basename($file_name)]);
+                    $image = File::create(['uri' => 'public://' . $content_type . '/images/' . basename($file_name)]);
                     $image->save();
                     $images[basename($file_name)] = $image;
                     $imageId = $images[basename($file_name)]->id();
@@ -431,26 +472,44 @@ function create_node($filedata, $contentType) {
               $logVariationFields .= " Success \n";
               break;
 
+            case 'id':
+              $logVariationFields .= "Importing Content (" . $fieldNames[$f] . ") :: ";
+              $nodeid = node_exists($data[$keyIndex[$fieldNames[$f]]]);
+              if ($nodeid > 0) {
+                $nodeArray['nid'] = $nodeid;
+              }
+              else {
+                error_message(t('Nodeid') . ' ' . $data[$keyIndex[$fieldNames[$f]]] . ' ' . t('does not exists in the system.'));
+              }
+              $logVariationFields .= " Success \n";
+              break;
+
             default:
               $nodeArray[$fieldNames[$f]] = $data[$keyIndex[$fieldNames[$f]]];
               break;
           }
         }
-        $nodeArray['type'] = strtolower($contentType);
+        $nodeArray['type'] = strtolower($content_type);
         $nodeArray['promote'] = 0;
         $nodeArray['sticky'] = 0;
-        if ($nodeArray['title']['value'] != '') {
+        // Updating existing node based on nodeid.
+        if ($import_type == '2') {
+          $node = Node::load($data[$keyIndex['nodeid']]);
+          foreach ($nodeArray as $key => $value) {
+            $node->set($key, $value);
+          }
+          $node->save();
+        }
+        elseif ($nodeArray['title']['value'] != '') {
+          // Creating new node.
           $node = Node::create($nodeArray);
           $node->save();
-          $logVariationFields .= "********************* Node Imported successfully ********************* \n\n";
-          fwrite($logFile, $logVariationFields);
         }
+        $logVariationFields .= "********************* Node Imported successfully ********************* \n\n";
+        fwrite($logFile, $logVariationFields);
         $nodeArray = [];
       }
       fclose($handle);
-      $url = $base_url . "/admin/content";
-      header('Location:' . $url);
-      exit;
     }
   } //die('test');
 }
